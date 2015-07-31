@@ -94,7 +94,7 @@ well. Let me introduce some bugs...
 
 Cache Misuse
 ............
-What if, in the ``args_to_subconfig method``, we messed up and forgot to add
+What if, in the ``args_to_subconfig`` method, we messed up and forgot to add
 the argument type to the dictionary we are returning:
 
 .. code:: python
