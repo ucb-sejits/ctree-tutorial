@@ -1,0 +1,12 @@
+# vim temp files
+.*.swp
+
+# compiled python files
+*.pyc
+
+# pycharm
+.idea
+
+# html files
+*.html
+
