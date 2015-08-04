@@ -23,7 +23,7 @@ Among other information, this will show you if ctree is using a cached version
 of your generated code or creating a new one. If creating a new one the log
 will also show the generated C code.
 
-Let's go back to our Fibonacci specializer. This is what will appear if we
+Let's go back to our Fibonacci Specializer. This is what will appear if we
 enable logging::
 
     INFO:ctree.jit:detected specialized function call with arg types: [<type 'int'>]
@@ -297,7 +297,7 @@ rest of the log::
 
 The code compiles successfully but the parameter type keeps defaulting to
 ``int`` and that drives us to an undefined behaviour when calling the function
-from python. This undefined behaviour ends in a Segmentation Fault.
+from python. This undefined behaviour may end in a Segmentation Fault.
 
 You may wonder why it doesn't raise an exception like on the bug from
 `Cache Misuse`_. This is due to the entry type we defined in the ``finalize``
@@ -308,15 +308,185 @@ entry type had an ``int`` parameter. Here our entry type says it accepts a
 This kind of problem can be hard to spot even with logging enabled. We will see
 other techniques that can be applied to this problem in the following sections.
 
+
+Debugging Generated C Code
+--------------------------
+
+If you know how to use GDB or LLDB, they may help you a lot when debugging the
+generated C code. Let's go back to the previous example:
+
+.. code:: python
+
+    def transform(self, tree, program_config):
+        tree = PyBasicConversions().visit(tree)
+
+        fib_fn = tree.find(FunctionDecl, name="apply")
+        arg_type = program_config.args_subconfig['arg_type']
+        fib_fn.return_type = arg_type()
+        # fib_fn.params[0].type = arg_type() # not setting the argument type
+        c_translator = CFile("generated", [tree])
+
+        return [c_translator]
+
+As we saw on `Defective C Code (Compilable)`_ this causes an undefined
+behaviour. You may be able to notice the problem by inspecting the generated
+code but it may be very hard in some cases. An alternative is to use a C
+debugger like  GDB or LLDB. You can simply call the python interpreter using
+GDB but it will help a lot if we can compile the C code using the ``-g`` flag.
+It turns ou that ctree allow us to specify the compiler flags, we just have to
+add the following line before compiling the code:
+
+.. code:: python
+
+    ctree.CONFIG.set('c', 'CFLAGS', ctree.CONFIG.get('c', 'CFLAGS') + ' -g')
+
+This way we are adding the ``-g`` flag to the set of compiler flags already
+used by ctree.
+
+So our BasicFunction class would look like this:
+
+.. code:: python
+
+    import ctree
+
+    class BasicFunction(ConcreteSpecializedFunction):
+        def __init__(self, entry_name, project_node, entry_typesig):
+            ctree.CONFIG.set('c', 'CFLAGS', ctree.CONFIG.get('c', 'CFLAGS') + ' -g')
+            self._c_function = self._compile(entry_name, project_node, entry_typesig)
+
+        def __call__(self, *args, **kwargs):
+            return self._c_function(*args, **kwargs)
+
+We will use lldb here but gdb would give similar results::
+
+    lldb python fibonacci_specializer.py
+
+This is the output we get from lldb::
+
+    * thread #1: tid = 0x2543e2, 0x0000000104de0f64 generated.so`apply(n=3389391) + 4 at generated.c:3, queue = 'com.apple.main-thread', stop reason = EXC_BAD_ACCESS (code=2, address=0x7fff5f3ffff8)
+        frame #0: 0x0000000104de0f64 generated.so`apply(n=3389391) + 4 at generated.c:3
+       1   	// <file: generated.c>
+       2
+    -> 3   	double apply(n) {
+       4   	    if (n < 2) {
+       5   	        return n;
+       6   	    } else {
+       7   	        return apply(n - 1) + apply(n - 2);
+
+Here the stop reason doesn't help a lot but LLDB tells exactly the line where
+the problem occurred in the C code.
+
+
 Ctree Exceptions
 ----------------
-There are some issues that, when detected by ctree, will raise an exception.
-They give us a clue on what the problem may be.
+Sometimes ctree detects a problem while generating the C code. When this
+happens ctree raises an exception. We will see some common ones.
 
-"Expected a pure C ast, but found a non-CtreeNode: %s."
+Expected a ctypes type instance, not %s, (%s)
+.............................................
 
-"Expected a ctypes type instance, not %s, (%s):"
+This usually means that you're using a type instead of an instance of this
+type. This will happen if we forgot to instantiate the class to use it as the
+type for an object. Consider this modification in the Fibonacci Specializer:
 
-"No type recognizer defined for %s."
+.. code:: python
 
-"No code generator defined for %s."
+    def transform(self, tree, program_config):
+        tree = PyBasicConversions().visit(tree)
+
+        fib_fn = tree.find(FunctionDecl, name="apply")
+        arg_type = program_config.args_subconfig['arg_type']
+        # fib_fn.return_type = arg_type()
+        fib_fn.return_type = arg_type
+        fib_fn.params[0].type = arg_type()
+        c_translator = CFile("generated", [tree])
+
+        return [c_translator]
+
+If we run the code like this we will get the following message (some lines
+removed)::
+
+    Traceback (most recent call last):
+      File "fibonacci_specializer_logging.py", line 82, in <module>
+        print c_fib(10), fib(10)
+      File "/Library/Python/2.7/site-packages/ctree-0.1.9-py2.7.egg/ctree/jit.py", line 324, in __call__
+        csf = self.finalize(transform_result, program_config)
+      File "fibonacci_specializer_logging.py", line 70, in finalize
+        return BasicFunction("apply", proj, entry_type)
+      File "fibonacci_specializer_logging.py", line 75, in __init__
+        self._c_function = self._compile(entry_name, project_node, entry_typesig)
+      [...]
+      File "/Library/Python/2.7/site-packages/ctree-0.1.9-py2.7.egg/ctree/c/nodes.py", line 29, in codegen
+        return CCodeGen(indent).visit(self)
+      File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/ast.py", line 241, in visit
+        return visitor(node)
+      File "/Library/Python/2.7/site-packages/ctree-0.1.9-py2.7.egg/ctree/c/codegen.py", line 54, in visit_FunctionDecl
+        s += "%s %s(%s)" % (codegen_type(node.return_type), node.name, params)
+      File "/Library/Python/2.7/site-packages/ctree-0.1.9-py2.7.egg/ctree/types.py", line 115, in codegen_type
+        "Expected a ctypes type instance, not %s, (%s):" % (ctype, type(ctype))
+
+    AssertionError: Expected a ctypes type instance, not <class 'ctypes.c_long'>, (<type '_ctypes.PyCSimpleType'>)
+
+The problem is that we are using a ``class 'ctypes.c_long'`` when we should be
+using an instance of this class. Looking at the traceback we can see the bad
+type is found when visiting the ``FunctionDecl``. More specifically in the
+``codegen_type`` function which is called with the ``return_type``.
+
+Sometimes we are able to identify the problem using the traceback but with more
+complex specializers it may not be possible. For more complex specializers,
+tools such as the `AstToolBox`_ or the `PyCharm IDE`_ will be of great use.
+
+
+Expected a pure C ast, but found a non-CtreeNode: %s
+....................................................
+This error occurs when there is a node in the AST that wasn't converted to a
+``CtreeNode``. This can happen if such node doesn't have an obvious C analogue
+and so was not converted by the ``PyBasicConversions``. If that is the case you
+will have to create you own transformations to convert this node to something
+inherited from ``CtreeNode``. This will be seen in the next chapter.
+
+In the other hand, it may also happen that you didn't run the
+``PyBasicConversions`` on part of the code.  Let's modify the code not to call
+the ``PyBasicConversions``:
+
+.. code:: python
+
+    def transform(self, tree, program_config):
+        # tree = PyBasicConversions().visit(tree)
+
+        # fib_fn = tree.find(FunctionDecl, name="apply")
+        fib_fn = tree.find(FunctionDef, name="apply")
+        arg_type = program_config.args_subconfig['arg_type']
+        fib_fn.return_type = arg_type()
+        # fib_fn.params[0].type = arg_type()
+        fib_fn.args.args[0].type = arg_type()
+        c_translator = CFile("generated", [tree])
+
+        return [c_translator]
+
+When we run the code like this we get the following message (some lines
+removed)::
+
+    Traceback (most recent call last):
+      File "fibonacci_specializer_logging.py", line 58, in <module>
+        print c_fib(10), fib(10)
+      File "/Library/Python/2.7/site-packages/ctree-0.1.9-py2.7.egg/ctree/jit.py", line 324, in __call__
+        csf = self.finalize(transform_result, program_config)
+      File "fibonacci_specializer_logging.py", line 46, in finalize
+        return BasicFunction("apply", proj, entry_type)
+      File "fibonacci_specializer_logging.py", line 51, in __init__
+        self._c_function = self._compile(entry_name, project_node, entry_typesig)
+      File "/Library/Python/2.7/site-packages/ctree-0.1.9-py2.7.egg/ctree/jit.py", line 108, in _compile
+        VerifyOnlyCtreeNodes().visit(project_node)
+      [...]
+      File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/ast.py", line 249, in generic_visit
+        self.visit(item)
+      File "/Library/Python/2.7/site-packages/ctree-0.1.9-py2.7.egg/ctree/analyses.py", line 46, in visit
+        raise AstValidationError("Expected a pure C ast, but found a non-CtreeNode: %s." % node)
+    ctree.analyses.AstValidationError: Expected a pure C ast, but found a non-CtreeNode: <_ast.FunctionDef object at 0x10151ea90>.
+
+Here we can easily spot the problem since the non-CtreeNode found is an
+``ast.FunctionDef`` object, which means that our function definition was not
+properly converted to C. Since ``ast.FunctionDef`` has an obvious equivalent in
+C, it can be converted automatically using the ``PyBasicConversions``.
+
