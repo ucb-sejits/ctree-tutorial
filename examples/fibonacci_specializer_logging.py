@@ -27,7 +27,7 @@ class BasicTranslator(LazySpecializedFunction):
 
         fib_fn = tree.find(FunctionDecl, name="apply")
         arg_type = program_config.args_subconfig['arg_type']
-        fib_fn.return_type = arg_type
+        fib_fn.return_type = arg_type()
         fib_fn.params[0].type = arg_type()
         c_translator = CFile("generated", [tree])
 
