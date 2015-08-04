@@ -545,11 +545,7 @@ transformations right to a specific node. Let's apply the
 .. image:: images/asttoolbox_5_PyBasicConversions.png
    :width: 1000px
 
-Since the ``PyBasicConversions`` may have some parameters, a box will appear:
-
-.. image:: images/asttoolbox_6_PyBasicConversions_params.png
-   :width: 300px
-
+Since the ``PyBasicConversions`` may have some parameters, a box will appear.
 We don't need to specify any parameters here so we may just click **Go**.
 
 Another tab will appear showing the AST after the transformation. You can
