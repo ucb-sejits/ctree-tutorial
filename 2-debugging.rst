@@ -313,7 +313,7 @@ Debugging Generated C Code
 --------------------------
 
 If you know how to use GDB or LLDB, they may help you a lot when debugging the
-generated C code. Let's go back to the previous example:
+running C code. Let's go back to the previous example:
 
 .. code:: python
 
@@ -397,7 +397,7 @@ type for an object. Consider this modification in the Fibonacci Specializer:
         fib_fn = tree.find(FunctionDecl, name="apply")
         arg_type = program_config.args_subconfig['arg_type']
         # fib_fn.return_type = arg_type()
-        fib_fn.return_type = arg_type
+        fib_fn.return_type = arg_type # <-- removing parenthesis
         fib_fn.params[0].type = arg_type()
         c_translator = CFile("generated", [tree])
 
@@ -452,13 +452,13 @@ the ``PyBasicConversions``:
 .. code:: python
 
     def transform(self, tree, program_config):
-        # tree = PyBasicConversions().visit(tree)
+        # tree = PyBasicConversions().visit(tree) # Not using PyBasicConversions
 
-        # fib_fn = tree.find(FunctionDecl, name="apply")
+        # fib_fn = tree.find(FunctionDecl, name="apply") # since we didn't convert the tree, we have to use FunctionDef instead of of FunctionDecl
         fib_fn = tree.find(FunctionDef, name="apply")
         arg_type = program_config.args_subconfig['arg_type']
         fib_fn.return_type = arg_type()
-        # fib_fn.params[0].type = arg_type()
+        # fib_fn.params[0].type = arg_type() # FunctionDef doesn't have a params attribute, we use args.args
         fib_fn.args.args[0].type = arg_type()
         c_translator = CFile("generated", [tree])
 
@@ -538,7 +538,7 @@ presented:
 .. image:: images/asttoolbox_4_tree.png
    :width: 600px
 
-This tree is still not converted. You can apply any of the available
+This tree is still not converted to C. You can apply any of the available
 transformations right to a specific node. Let's apply the
 ``PyBasicConversions``:
 
@@ -555,7 +555,7 @@ compare it with the previous AST:
    :width: 600px
 
 We can also generate the C code from the converted tree. We just have to call
-the ``CCodeGen``.
+``CCodeGen``.
 
 .. image:: images/asttoolbox_9_CCodeGen.png
    :width: 1000px
@@ -565,12 +565,12 @@ The resulting code will be shown:
 .. image:: images/asttoolbox_10_CCodeGen_result.png
    :width: 600px
 
-Note that, since we didn't specified the return type and the parameter type,
-the function in the generated code returns void and the parameter has no type
+Note that, since we didn't specify the return and parameter types, the function
+in the generated code has a void return and the parameter has no type
 associated with it.
 
-Since we can observe how the AST changes and apply each transformer manually
-the AstToolBox can be used to identify problem in the code generation process.
+When creating your own transformers you can verify if a particular AST changes
+the way you expect using the AstToolBox.
 
 PyCharm IDE
 ...........
