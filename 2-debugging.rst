@@ -386,7 +386,7 @@ Expected a ctypes type instance, not %s, (%s)
 .............................................
 
 This usually means that you're using a type instead of an instance of this
-type. This will happen if we forgot to instantiate the class to use it as the
+type. This will happen if you forgot to instantiate the class to use it as the
 type for an object. Consider this modification in the Fibonacci Specializer:
 
 .. code:: python
@@ -446,7 +446,7 @@ will have to create you own transformations to convert this node to something
 inherited from ``CtreeNode``. This will be seen in the next chapter.
 
 In the other hand, it may also happen that you didn't run the
-``PyBasicConversions`` on part of the code.  Let's modify the code not to call
+``PyBasicConversions`` on part of the code.  Let's modify the code to not call
 the ``PyBasicConversions``:
 
 .. code:: python
@@ -489,4 +489,93 @@ Here we can easily spot the problem since the non-CtreeNode found is an
 ``ast.FunctionDef`` object, which means that our function definition was not
 properly converted to C. Since ``ast.FunctionDef`` has an obvious equivalent in
 C, it can be converted automatically using the ``PyBasicConversions``.
+
+Tools
+-----
+As we mentioned before, some tools may be invaluable when debugging a
+specializer. We will take a look at the `AstToolBox`_ and the `PyCharm IDE`_.
+
+AstToolBox
+..........
+The AstToolBox allows a developer to start from a python source file and see
+how a series of transformers change it. You can find the source code and
+installation instructions in the `AstToolBox Repository
+<https://github.com/ucb-sejits/ast_tool_box>`_.
+
+Once you installed you can run it with::
+
+    ast_tool_box
+
+You can also specify a python file if you want::
+
+    ast_tool_box fib.py
+
+A window like this will open:
+
+.. image:: images/asttoolbox_1.png
+   :width: 1000px
+
+It shows the ``fib.py`` file and its AST. In the right side there is a list of
+Transforms that can be applied to your code. If you click in one Transformer
+the source code will appear in the box bellow. You can also load you own
+Transformer.
+
+The AST viewer can be very useful and if you can't find a particular node, you
+may use the search box right above the AST:
+
+.. image:: images/asttoolbox_2_search.png
+   :width: 600px
+
+
+Right click in a node in the AST for some extra options:
+
+.. image:: images/asttoolbox_3_using_dot.png
+   :width: 600px
+
+If you select ``show tree using dot``, a nice tree visualization will be
+presented:
+
+.. image:: images/asttoolbox_4_tree.png
+   :width: 600px
+
+This tree is still not converted. You can apply any of the available
+transformations right to a specific node. Let's apply the
+``PyBasicConversions``:
+
+.. image:: images/asttoolbox_5_PyBasicConversions.png
+   :width: 1000px
+
+Since the ``PyBasicConversions`` may have some parameters, a box will appear:
+
+.. image:: images/asttoolbox_6_PyBasicConversions_params.png
+   :width: 300px
+
+We don't need to specify any parameters here so we may just click **Go**.
+
+Another tab will appear showing the AST after the transformation. You can
+compare it with the previous AST:
+
+.. image:: images/asttoolbox_7_PyBasicConversions_result.png
+   :width: 600px
+
+We can also generate the C code from the converted tree. We just have to call
+the ``CCodeGen``.
+
+.. image:: images/asttoolbox_9_CCodeGen.png
+   :width: 1000px
+
+The resulting code will be shown:
+
+.. image:: images/asttoolbox_10_CCodeGen_result.png
+   :width: 600px
+
+Note that, since we didn't specified the return type and the parameter type,
+the function in the generated code returns void and the parameter has no type
+associated with it.
+
+Since we can observe how the AST changes and apply each transformer manually
+the AstToolBox can be used to identify problem in the code generation process.
+
+PyCharm IDE
+...........
 
