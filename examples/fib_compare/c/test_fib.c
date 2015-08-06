@@ -10,7 +10,7 @@ int main(int argc, char const *argv[])
 	int result;
 
 	printf("[");
-	for (int i = 0; i < 5; ++i) {
+	for (int i = 0; i < 20; ++i) {
 		begin = clock();
 		result = fib(40);
 		end = clock();

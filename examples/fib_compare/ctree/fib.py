@@ -52,5 +52,5 @@ class BasicFunction(ConcreteSpecializedFunction):
 
 c_fib = BasicTranslator.from_function(fib)
 
-print timeit.repeat('c_fib(40)', 'from __main__ import c_fib', repeat=5,
+print timeit.repeat('c_fib(40)', 'from __main__ import c_fib', repeat=20,
                     number=1)

@@ -1,3 +1,3 @@
 import timeit
 
-print timeit.repeat('fib(40)', 'from fib import fib', repeat=5, number=1)
+print timeit.repeat('fib(40)', 'from fib import fib', repeat=20, number=1)
