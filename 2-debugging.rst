@@ -103,7 +103,7 @@ the argument type to the dictionary we are returning:
         # return {'arg_type': type(get_ctype(args[0]))}
         return {'arg_type': type(get_ctype(0))}
 
-This way, ``arg_type`` will always be an **int** no matter what the actual.
+This way, ``arg_type`` will always be an **int** no matter what the actual
 arguments are. The log will now look like this::
 
     INFO:ctree.jit:detected specialized function call with arg types: [<type 'int'>]
@@ -574,4 +574,6 @@ the way you expect using the AstToolBox.
 
 PyCharm IDE
 ...........
+
+PyCharm debugging tools are very powerful and
 
