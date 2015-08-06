@@ -6,6 +6,9 @@ from ctree.transformations import PyBasicConversions
 from ctree.jit import LazySpecializedFunction
 from ctree.jit import ConcreteSpecializedFunction
 
+# import logging
+# logging.basicConfig(level=20)
+
 
 def fib(n):
     if n < 2:
