@@ -41,8 +41,9 @@ structure size.
 The ``ConcreteSpecializedFunction`` is the already specialized and compiled
 function.
 
-Let's create a really simple specializer. We will start by implementing the
-fibonacci function in python.
+Let's create a really simple specializer. The complete code for this
+specializer can be found in `<examples/fibonacci_specializer.py>`_. We will
+start by implementing the fibonacci function in python.
 
 .. code:: python
 
@@ -259,8 +260,21 @@ lines to the beginning of the file:
 This will show a lot of information when running the code, including the source
 code generated for the integer type and for the float type.
 
-This specializer was quite simple to create as we could convert everything to C
-using only the ``PyBasicConversions`` transformer. For more interesting
+In fact we can compare the time using different python implementations and with
+a pure C implementation. The different test cases can be found in
+`<examples/fib_compare/>`_. The following plot shows the average running time
+after 20 runs of each implementation and pure C (with compiler optimizations):
+
+.. image:: images/fib_implementations.png
+   :width: 1000px
+
+The Ctree running time is almost as good as pure C with compiler optimization
+and much faster than traditional python implementations. Those times are for
+the ``fibonacci(40)`` function, with more complex specializer the time
+differences can become even more evident.
+
+This specializer was quite simple to implement as we could convert everything
+to C using only the ``PyBasicConversions`` transformer. For more interesting
 specializers we will need to create our own Visitors and Transformers as we
 will see in the next section.
 
@@ -307,7 +321,7 @@ Using ``get_ast`` we got the AST from the function and used the visitor the
 same way we used the ``PyBasicConversions`` in the specializer.
 
 .. note::
-     We don't need to call ``get_ast`` in the specializer as the ``tree``
+     We didn't have to call ``get_ast`` in the specializer as the ``tree``
      argument, from the transform_ method, was already converted to AST.
 
 We can also do something similar in order to count the number of strings in the
