@@ -575,5 +575,4 @@ the way you expect using the AstToolBox.
 PyCharm IDE
 ...........
 
-PyCharm debugging tools are very powerful and
 
