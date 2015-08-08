@@ -363,7 +363,8 @@ The output should be::
 
 Observe that now the method returns a modified node. The new node will
 substitute the old one in the AST. When we use the ``StringPrinter`` again
-it's possible to see that the strings are now uppercase.
+it's possible to see that the strings are now uppercase. This example can be
+found on `<examples/simple_visit_transform.py>`_
 
 Specializer Project
 -------------------
