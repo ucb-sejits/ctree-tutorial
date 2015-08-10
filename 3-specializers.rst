@@ -138,7 +138,7 @@ after the transformer finishes its visit.
 Let's create a method to generate this C function. We will define the entire
 function using ctree nodes, check the `documentation
 <http://ucb-sejits.github.io/ctree-docs/ctree.c.html#module-ctree.c.nodes>`_
-for more details on each node:
+for more details on each type of node:
 
 .. code:: python
 
@@ -209,7 +209,7 @@ the nodes in the tree from ``ast`` to ``ctree`` node.
 
 Some modifications will also have to be made to the
 ``LazySpecializedFunction``. Our old ``args_to_subconfig`` from the Fibonacci
-Specializer assumed a simple argument, like int ou float. Now our argument is
+Specializer assumed a simple argument, like int or float. Now our argument is
 an array. This is how the ``args_to_subconfig`` method from the class inherited
 from ``LazySpecializedFunction`` should look like.
 
@@ -348,7 +348,7 @@ it:
         func_def = self.get_func_def(inner_function)
         NpMapTransformer.lifted_functions.append(func_def)
 
-        # this the node that will substitute the old one, a function call to
+        # this is the node that will substitute the old one, a function call to
         # our new generated function without the first argument (the lambda)
         c_node = FunctionCall(SymbolRef(func_def.name), node.args[1:])
         return c_node
