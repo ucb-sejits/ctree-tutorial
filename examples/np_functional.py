@@ -185,10 +185,10 @@ class NpFunctionalTransformer(object):
         return BaseNpFunctionalTransformer.lifted_functions
 
 
-def mod_array(a):
-    np_elementwise(lambda x, y: x+y, a, np_map(lambda x: x*2, a))
-    np_map(lambda x: x/4, a)
-    return np_reduce(lambda x, y: x+y, a)
+def sum_array(a):
+    np_map(lambda x: x*2, a)
+    np_elementwise(lambda x, y: x+y, a, a)
+    return np_reduce(lambda x, y: x+y, np_map(lambda x: x/4, a))
 
 
 class BasicTranslator(LazySpecializedFunction):
@@ -231,12 +231,12 @@ class BasicFunction(ConcreteSpecializedFunction):
         return self._c_function(*args, **kwargs)
 
 
-c_mod_array = BasicTranslator.from_function(mod_array)
+c_sum_array = BasicTranslator.from_function(sum_array)
 
 test_array = np.array([range(10), range(10, 20)])
-a =  mod_array(test_array)
+a = sum_array(test_array)
 print a
-b = c_mod_array(test_array)
+b = c_sum_array(test_array)
 print b
 
 
