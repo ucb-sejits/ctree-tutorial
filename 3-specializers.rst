@@ -533,6 +533,34 @@ Same thing for the ``np_elementwise``:
             ]
             return FunctionDecl(return_type, self.gen_func_name, params, defn)
 
+Now there are three transformers we have to use in the
+``LazySpecializedFunction``. To make our transformers easy to use, we will
+create a class that seems like a transformer but actually applies the three
+transformers to the tree:
+
+.. code:: python
+
+    class NpFunctionalTransformer(object):
+        transformers = [NpMapTransformer,
+                        NpReduceTransformer,
+                        NpElementwiseTransformer]
+
+        def __init__(self, array_type):
+            self.array_type = array_type
+
+        def visit(self, tree):
+            for transformer in self.transformers:
+                transformer(self.array_type).visit(tree)
+            return tree
+
+        @staticmethod
+        def lifted_functions():
+            return BaseNpFunctionalTransformer.lifted_functions
+
+With this class, instead of having to use ``NpMapTransformer``,
+``NpReduceTransformer`` and ``NpElementwiseTransformer`` we can just use
+``NpFunctionalTransformer``.
+
 To test our new transformers we will specialize the following function:
 
 .. code:: python
@@ -542,10 +570,11 @@ To test our new transformers we will specialize the following function:
         np_elementwise(lambda x, y: x+y, a, a)
         return np_reduce(lambda x, y: x+y, np_map(lambda x: x/4, a))
 
-This is a very weird way to sum all the elements of an array, but will be good
-for our test. We just have to adapt our BasicTranslator to handle the function
-return. The complete code with all the functions and the specializer can be
-found in `<examples/np_functional.py>`_
+This is a very weird way to sum all the array elements, but will be good for
+our test. We just have to adapt our BasicTranslator to use the
+``NpFunctionalTransformer`` and to handle the function return. The complete
+code with all the functions and the specializer can be found in
+`<examples/np_functional.py>`_
 
 Executing the example we have::
 
