@@ -52,7 +52,7 @@ class NpMapTransformer(NodeTransformer):
     def visit_Call(self, node):
         self.generic_visit(node)
         # return unmodified node if function being called is not np_map
-        if node.func.id != self.func_name:
+        if getattr(node.func, "id", None) != self.func_name:
             return node
 
         return self.convert(node) # do the required transformations, we

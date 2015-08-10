@@ -115,7 +115,7 @@ We want to intercept calls to ``np_map`` and make them call our C version of
         def visit_Call(self, node):
             self.generic_visit(node)
             # return unmodified node if function being called is not np_map
-            if node.func.id != self.func_name:
+            if getattr(node.func, "id", None) != self.func_name:
                 return node
 
             return self.convert(node) # do the required transformations, we
@@ -404,7 +404,7 @@ other functions. We will create a base class with those methods:
 
         def visit_Call(self, node):
             self.generic_visit(node)
-            if node.func.id != self.func_name:
+            if getattr(node.func, "id", None) != self.func_name:
                 return node
 
             return self.convert(node)

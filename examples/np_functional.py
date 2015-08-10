@@ -57,7 +57,7 @@ class BaseNpFunctionalTransformer(NodeTransformer):
 
     def visit_Call(self, node):
         self.generic_visit(node)
-        if node.func.id != self.func_name:
+        if getattr(node.func, "id", None) != self.func_name:
             return node
 
         return self.convert(node)
