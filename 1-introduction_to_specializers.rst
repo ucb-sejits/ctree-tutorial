@@ -42,7 +42,7 @@ The ``ConcreteSpecializedFunction`` is the already specialized and compiled
 function.
 
 Let's create a really simple specializer. The complete code for this
-specializer can be found in `<examples/fibonacci_specializer.py>`_. We will
+specializer can be found at `<examples/fibonacci_specializer.py>`_. We will
 start by implementing the fibonacci function in python.
 
 .. code:: python
@@ -261,7 +261,7 @@ This will show a lot of information when running the code, including the source
 code generated for the integer type and for the float type.
 
 In fact we can compare the time using different python implementations and with
-a pure C implementation. The different test cases can be found in
+a pure C implementation. The different test cases can be found at
 `<examples/fib_compare/>`_. The following plot shows the average running time
 after 20 runs of each implementation and pure C (with compiler optimizations):
 
@@ -364,7 +364,7 @@ The output should be::
 Observe that now the method returns a modified node. The new node will
 substitute the old one in the AST. When we use the ``StringPrinter`` again
 it's possible to see that the strings are now uppercase. This example can be
-found on `<examples/simple_visit_transform.py>`_
+found at `<examples/simple_visit_transform.py>`_
 
 Specializer Project
 -------------------
