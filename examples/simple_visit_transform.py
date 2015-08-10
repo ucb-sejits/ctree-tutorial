@@ -1,9 +1,5 @@
 import ctree
-
 from ctree.visitors import NodeVisitor, NodeTransformer
-
-# import logging
-# logging.basicConfig(level=20)
 
 
 class StringCounter(NodeVisitor):
@@ -13,13 +9,15 @@ class StringCounter(NodeVisitor):
     def visit_Str(self, node):
         self.number_strings += 1
 
+
 class StringPrinter(NodeVisitor):
     def visit_Str(self, node):
         print node.s
 
+
 class UppercaseConverter(NodeTransformer):
     def visit_Str(self, node):
-        node.s = node.s.upper() + 'a'
+        node.s = node.s.upper()
         return node
 
 
