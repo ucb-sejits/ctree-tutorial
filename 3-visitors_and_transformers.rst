@@ -2,8 +2,6 @@
 Visitors and Transformers
 =========================
 
-Creating Visitors and Transformers
-----------------------------------
 In order to retrieve information or modify the AST we need to use Visitors and
 Transformers. A Visitor traverses the AST looking for nodes with types you
 specified, consider the following example:
