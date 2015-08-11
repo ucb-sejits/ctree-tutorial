@@ -1,5 +1,5 @@
 ============================
-Case Study: Functional Numpy
+Case Study: Functional NumPy
 ============================
 
 Introduction

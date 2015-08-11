@@ -15,8 +15,8 @@ Basic Concepts
 --------------
 - **AST** Abstract Syntax Tree. A tree representation of a source code. This is
   the way specializers modify and convert codes.
-- **JIT** Just in Time. Refers to the "just in time" compilation of the code.
-  which is the compilation done during the execution of a program.
+- **JIT** Just in Time. Refers to the "just in time" compilation of the code,
+  which is the compilation done during execution of a program.
 - **Transformer** Same as Visitor with the difference that Transformers can
   modify the tree they are traversing.
 - **Visitor** A class that traverses an AST and executes actions based on the
