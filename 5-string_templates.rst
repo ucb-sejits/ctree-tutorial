@@ -6,9 +6,9 @@ Instead of writing code using ctree nodes as we did in the previous section,
 sometimes it's more convenient to write the actual C code. We can do this in
 ctree using String Templates.
 
-String Templates allow you to put some C code in a string and insert it in the
-middle of the tree. The following example is an alternative implementation of
-``NpMapTransformer`` using ``StringTemplate``:
+String Templates allow you to put arbitrary C code in a string and insert it in
+the middle of the tree. The following example is an alternative implementation
+of ``NpMapTransformer`` using ``StringTemplate``:
 
 .. code:: python
 
@@ -42,10 +42,32 @@ able to modify regular ctree nodes. For this example, either methods can be
 applied as other subsequent transformers will not need to modify this
 structure.
 
-The complete example can be found at `<examples/np_map_template.py>`_
+The complete example can be found at `<examples/np_map_template.py>`_.
 
 You don't always have to use the C code as a string in your python code. If you
 have a big C code you want to use, it may be better to use a file to hold your
 string template. If that is the case, you just have to use the ``FileTemplate``
 class. Its usage is very similar to the ``StringTemplate`` class but instead of
-using the string template as first argument, you use the file path.
+using the string template as first argument, you use the file path. If we used
+a file template in the ``NpMapTransformer`` it would be as follow:
+
+.. code:: python
+
+    from ctree.templates.nodes import FileTemplate
+
+    class NpMapTransformer(BaseNpFunctionalTransformer):
+        func_name = "np_map"
+
+        def get_func_def(self, inner_function):
+            number_items = np.prod(self.array_type._shape_)
+            params = [SymbolRef("A", self.array_type())]
+            return_type = self.array_type()
+            defn = FileTemplate("./np_map.tmpl.c", {
+                'NUMBER_ITEMS': Constant(number_items),
+                'INNER_FUNCTION': inner_function
+            })
+            return FunctionDecl(return_type, self.gen_func_name, params, [defn])
+
+Where `'./np_map.tmpl.c' <examples/np_map.tmpl.c>`_ is the template file. The
+complete example, using ``FileTemplate`` can be found at
+`<examples/np_map_file_template.py>`_.
