@@ -217,8 +217,8 @@ same as the right, calculated using the regular python function. Since we used
 arguments with different types in each call, two different specialized
 functions were generated.
 
-Checking Performance
---------------------
+Evaluating Performance
+----------------------
 We can check the running time difference for each function. Using the
 ``timeit`` module, we will run ``fib`` and ``c_fib`` 5 times.
 
