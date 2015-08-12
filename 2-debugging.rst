@@ -443,7 +443,7 @@ This error occurs when there is a node in the AST that wasn't converted to a
 ``CtreeNode``. This can happen if such node doesn't have an obvious C analogue
 and so was not converted by the ``PyBasicConversions``. If that is the case you
 will have to create you own transformations to convert this node to something
-inherited from ``CtreeNode``. This will be seen in the next chapter.
+inherited from ``CtreeNode``. This will be seen in the next sections.
 
 In the other hand, it may also happen that you didn't run the
 ``PyBasicConversions`` on part of the code.  Let's modify the code to not call
