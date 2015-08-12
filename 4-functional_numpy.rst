@@ -26,7 +26,7 @@ in front of the name. Here is the ``np_map``:
     import numpy as np
 
     def np_map(function, array):
-        vec_func = np.vectorize(function)
+        vec_func = np.frompyfunc(function, 1, 1)
         array[:] = vec_func(array)
         return array
 
