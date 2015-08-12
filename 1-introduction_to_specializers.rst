@@ -266,7 +266,7 @@ differences can become even more evident.
 This specializer was quite simple to implement as we could convert everything
 to C using only the ``PyBasicConversions`` transformer. For more interesting
 specializers we will need to create our own Visitors and Transformers as we
-will see in the next section.
+will see in the next sections.
 
 
 Specializer Project
