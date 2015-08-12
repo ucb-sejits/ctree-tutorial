@@ -195,12 +195,12 @@ list and will return the function call we will use in place of the old
 
 Observe that, even though the node we are visiting is of type ``Call``, we are
 returning a node of type ``FunctionCall``. The difference between the two is
-that ``Call`` is an ``ast`` node while ``FunctionCall`` is a ``ctree`` node.
+that ``Call`` is an ``ast`` node while ``FunctionCall`` is a ``ctree.c`` node.
 ``ast`` nodes are defined in the Python `ast module
 <https://docs.python.org/2/library/ast.html>`_ and are equivalent to **Python**
-expressions. In the other hand, ``ctree`` nodes are equivalent to **C**
+expressions. In the other hand, ``ctree.c`` nodes are equivalent to **C**
 expressions. What the ``PyBasicConversions`` transformer does is try to convert
-the nodes in the tree from ``ast`` to ``ctree`` node.
+the nodes in the tree from ``ast`` to ``ctree.c`` node.
 
 Some modifications will also have to be made to the
 ``LazySpecializedFunction``. Our old ``args_to_subconfig`` from the Fibonacci
