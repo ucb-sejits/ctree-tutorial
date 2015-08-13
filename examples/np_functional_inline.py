@@ -3,16 +3,13 @@ from ctypes import c_int
 import ctypes
 import ctree
 from ctree.c.nodes import FunctionCall, SymbolRef, FunctionDecl, For, Assign, \
-    Constant, Lt, PreInc, ArrayRef, Return, CFile
+    Constant, Lt, PreInc, ArrayRef, Return, CFile, MultiNode
 from ctree.cpp.nodes import CppDefine
 from ctree.jit import LazySpecializedFunction, ConcreteSpecializedFunction
 from ctree.nodes import Project
 from ctree.transformations import PyBasicConversions
 from ctree.visitors import NodeTransformer
 import numpy as np
-
-import logging
-logging.basicConfig(level=20)
 
 
 def np_map(function, array):
@@ -49,9 +46,6 @@ class LambdaLifter(NodeTransformer):
 
 
 class BaseNpFunctionalTransformer(NodeTransformer):
-    lifted_functions = []
-    func_count = 0
-
     def __init__(self, array_type):
         self.array_type = array_type
 
@@ -67,104 +61,124 @@ class BaseNpFunctionalTransformer(NodeTransformer):
         if not isinstance(inner_function, Lambda):
             raise Exception(
                 self.func_name + " requires lambda to be specialized")
-
         lambda_lifter = LambdaLifter()
         inner_function = lambda_lifter.visit(inner_function)
 
-        self.lifted_functions.extend(lambda_lifter.lifted_functions)
+        defn = []
+        params = []
+        for arg in node.args[1:]:
+            if isinstance(arg, MultiNode):
+                defn.extend(arg.body)
+                ref = getattr(arg, 'return_ref', None)
+            else:
+                ref = arg
 
-        func_def = self.get_func_def(inner_function)
-        BaseNpFunctionalTransformer.lifted_functions.append(func_def)
-        c_node = FunctionCall(SymbolRef(func_def.name), node.args[1:])
+            params.append(ref)
+
+        func_def, return_ref = self.get_def(inner_function, params)
+
+        c_node = MultiNode(defn + lambda_lifter.lifted_functions + func_def)
+        setattr(c_node, 'return_ref', return_ref)
         return c_node
-
-    @property
-    def gen_func_name(self):
-        name = "%s_%s" % (self.func_name, str(type(self).func_count))
-        type(self).func_count += 1
-        return name
 
     @property
     def func_name(self):
         raise NotImplementedError("Class %s should override func_name()"
                                   % type(self))
 
-    def get_func_def(self, inner_function_name):
-        raise NotImplementedError("Class %s should override get_func_def()"
+    def get_def(self, inner_function_name, params):
+        raise NotImplementedError("Class %s should override get_def()"
                                   % type(self))
 
 
 class NpMapTransformer(BaseNpFunctionalTransformer):
     func_name = "np_map"
 
-    def get_func_def(self, inner_function):
+    def get_def(self, inner_function, params):
+        array_ref = params[0]
         number_items = np.prod(self.array_type._shape_)
-        params = [SymbolRef("A", self.array_type())]
-        return_type = self.array_type()
         defn = [
             For(Assign(SymbolRef("i", c_int()), Constant(0)),
                 Lt(SymbolRef("i"), Constant(number_items)),
                 PreInc(SymbolRef("i")),
                 [
-                    Assign(ArrayRef(SymbolRef("A"), SymbolRef("i")),
+                    Assign(ArrayRef(array_ref, SymbolRef("i")),
                            FunctionCall(inner_function,
-                                        [ArrayRef(SymbolRef("A"),
+                                        [ArrayRef(array_ref,
                                                   SymbolRef("i"))])),
-                ]),
-            Return(SymbolRef("A")),
+                ])
         ]
-        return FunctionDecl(return_type, self.gen_func_name, params, defn)
+        return defn, array_ref
 
 
 class NpReduceTransformer(BaseNpFunctionalTransformer):
     func_name = "np_reduce"
+    _count = 0
 
-    def get_func_def(self, inner_function):
+    def get_def(self, inner_function, params):
+        array_ref = params[0]
         number_items = np.prod(self.array_type._shape_)
-        params = [SymbolRef("A", self.array_type())]
         elements_type = self.array_type._dtype_.type()
-        return_type = elements_type
+        accumulator_ref = "accumulator_%i" % self.count
         defn = [
-            Assign(SymbolRef("accumulator", elements_type),
-                   ArrayRef(SymbolRef("A"), Constant(0))),
+            Assign(SymbolRef(accumulator_ref, elements_type),
+                   ArrayRef(array_ref, Constant(0))),
             For(Assign(SymbolRef("i", c_int()), Constant(1)),
                 Lt(SymbolRef("i"), Constant(number_items)),
                 PreInc(SymbolRef("i")),
                 [Assign(
-                    SymbolRef("accumulator"),
-                    FunctionCall(inner_function, [SymbolRef("accumulator"),
-                                                  ArrayRef(SymbolRef("A"),
+                    SymbolRef(accumulator_ref),
+                    FunctionCall(inner_function, [SymbolRef(accumulator_ref),
+                                                  ArrayRef(array_ref,
                                                            SymbolRef("i"))])
                 )]
-                ),
-            Return(SymbolRef("accumulator")),
+                )
         ]
-        return FunctionDecl(return_type, self.gen_func_name, params, defn)
+
+        return defn, SymbolRef(accumulator_ref)
+
+    @property
+    def count(self):
+        old_count = NpReduceTransformer._count
+        NpReduceTransformer._count += 1
+        return old_count
 
 
 class NpElementwiseTransformer(BaseNpFunctionalTransformer):
     func_name = "np_elementwise"
 
-    def get_func_def(self, inner_function):
+    def get_def(self, inner_function, params):
         number_items = np.prod(self.array_type._shape_)
-        params = [SymbolRef("A", self.array_type()),
-                  SymbolRef("B", self.array_type())]
-        return_type = self.array_type()
         defn = [
             For(Assign(SymbolRef("i", c_int()), Constant(0)),
                 Lt(SymbolRef("i"), Constant(number_items)),
                 PreInc(SymbolRef("i")),
                 [
-                    Assign(ArrayRef(SymbolRef("A"), SymbolRef("i")),
+                    Assign(ArrayRef(params[0], SymbolRef("i")),
                            FunctionCall(inner_function,
-                                        [ArrayRef(SymbolRef("A"),
-                                                  SymbolRef("i")),
-                                         ArrayRef(SymbolRef("B"),
-                                                  SymbolRef("i"))])),
-                ]),
-            Return(SymbolRef("A")),
+                                        [ArrayRef(params[0], SymbolRef("i")),
+                                         ArrayRef(params[1], SymbolRef("i"))
+                                         ])),
+                ])
         ]
-        return FunctionDecl(return_type, self.gen_func_name, params, defn)
+        return defn, params[0]
+
+
+class AssignFixer(NodeTransformer):
+    def visit_Assign(self, node):
+        self.generic_visit(node)
+        return self._get_defn(node)
+
+    def visit_Return(self, node):
+        self.generic_visit(node)
+        return self._get_defn(node)
+
+    def _get_defn(self, node):
+        if not hasattr(node.value, 'return_ref'):
+            return node
+        defn = node.value
+        node.value = defn.return_ref
+        return MultiNode([defn, node])
 
 
 class NpFunctionalTransformer(object):
@@ -178,16 +192,14 @@ class NpFunctionalTransformer(object):
     def visit(self, tree):
         for transformer in self.transformers:
             transformer(self.array_type).visit(tree)
+        AssignFixer().visit(tree)
         return tree
 
-    @staticmethod
-    def lifted_functions():
-        return BaseNpFunctionalTransformer.lifted_functions
 
-
-def sum_array(array):
-    sum_term = 3
-    return np_map(lambda x: x+sum_term, array)
+def sum_array(a):
+    np_map(lambda x: x*2, a)
+    np_elementwise(lambda x, y: x+y, a, a)
+    return np_reduce(lambda x, y: x+y, np_map(lambda x: x/4, a))
 
 
 class BasicTranslator(LazySpecializedFunction):
@@ -206,8 +218,7 @@ class BasicTranslator(LazySpecializedFunction):
         fib_fn.params[0].type = arg_type()
         fib_fn.return_type = arg_type._dtype_.type()
 
-        lifted_functions = NpFunctionalTransformer.lifted_functions()
-        c_translator = CFile("generated", [lifted_functions, tree])
+        c_translator = CFile("generated", [tree])
 
         return [c_translator]
 
@@ -231,10 +242,17 @@ class BasicFunction(ConcreteSpecializedFunction):
 
 
 if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=20)
+
     c_sum_array = BasicTranslator.from_function(sum_array)
 
     test_array = np.array([range(10), range(10, 20)])
     a = sum_array(test_array)
     print a
+    test_array = np.array([range(10), range(10, 20)])
     b = c_sum_array(test_array)
     print b
+
+
+
