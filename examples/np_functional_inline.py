@@ -64,22 +64,25 @@ class BaseNpFunctionalTransformer(NodeTransformer):
         lambda_lifter = LambdaLifter()
         inner_function = lambda_lifter.visit(inner_function)
 
-        defn = []
-        params = []
-        for arg in node.args[1:]:
-            if isinstance(arg, MultiNode):
-                defn.extend(arg.body)
-                ref = getattr(arg, 'return_ref', None)
-            else:
-                ref = arg
-
-            params.append(ref)
+        params = self._get_params(node)
+        defn = self._get_defn(node)
 
         func_def, return_ref = self.get_def(inner_function, params)
 
         c_node = MultiNode(defn + lambda_lifter.lifted_functions + func_def)
         setattr(c_node, 'return_ref', return_ref)
         return c_node
+
+    def _get_params(self, node):
+        params = map(lambda x: getattr(x, 'return_ref', x), node.args[1:])
+        return params
+
+    def _get_defn(self, node):
+        defn = []
+        for arg in node.args[1:]:
+            if isinstance(arg, MultiNode):
+                defn.extend(arg.body)
+        return defn
 
     @property
     def func_name(self):

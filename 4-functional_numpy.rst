@@ -783,18 +783,8 @@ This is the ``convert`` method with support to nested function calls:
         lambda_lifter = LambdaLifter()
         inner_function = lambda_lifter.visit(inner_function)
 
-        defn = []
-        params = []
-        for arg in node.args[1:]:
-            if isinstance(arg, MultiNode):
-                defn.extend(arg.body) # if the argument is a MultiNode, insert its body
-                                      # in the defn list
-                ref = getattr(arg, 'return_ref', None) # substitutes the parameter by
-                                                       # the return_ref attribute
-            else:
-                ref = arg
-
-            params.append(ref)
+        params = self._get_params(node)
+        defn = self._get_defn(node)
 
         func_def, return_ref = self.get_def(inner_function, params)
 
@@ -804,6 +794,19 @@ This is the ``convert`` method with support to nested function calls:
                                                   # determine which reference to use as
                                                   # parameter
         return c_node
+
+    def _get_params(self, node):
+        # substitutes the parameter by the return_ref attribute if there is such attribute
+        params = map(lambda x: getattr(x, 'return_ref', x), node.args[1:])
+        return params
+
+    def _get_defn(self, node):
+        defn = []
+        for arg in node.args[1:]:
+            if isinstance(arg, MultiNode):
+                defn.extend(arg.body) # if the argument is a MultiNode, insert its body in the defn list
+        return defn
+
 
 The other transformers needed similar modifications you can check their new
 implementations at `<examples/np_functional_inline.py>`_.
