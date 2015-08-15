@@ -717,12 +717,15 @@ that the ``convert`` method can insert this piece of code where the ``Call`` to
             ]
             return defn, array_ref
 
-Observe that now we don't need to define the parameters and return type. But
-since we don't have them anymore we add a new parameter to the now called
-``get_def`` function. ``params`` should have the references used as function
-argument. We're now in the same scope as the function call and can't define an
-arbitrary name for the array. What used to be the function return may or may
-not be used by who called it. Consider this example:
+Observe that now we don't need to define the parameters and return type.
+Since we don't have them anymore, we add a new parameter to the now called
+``get_def`` function. The ``params`` parameter should have the references used
+as function argument in the ``Call`` node we're replacing. We're now in the
+same scope as the function call and can't define an arbitrary name for the
+array.
+
+What used to be the function return may or may not be used by who called it.
+Consider this example:
 
 .. code:: python
 
@@ -732,7 +735,7 @@ not be used by who called it. Consider this example:
 In the first function call, a simple substitution by the function body should
 be enough. In the second, we must also assign what used to be the return value
 to ``array_2``. We added a second return to the function with what used to be
-the return so that we can deal with this in the ``convert`` method.
+the return so that we can deal with it in the ``convert`` method.
 
 This is our new ``convert`` method without support for nested function calls or
 return assignment:
@@ -819,8 +822,8 @@ We still didn't solve the assignment problem. Consider this example:
 
 With the current implementation we would substitute ``np_reduce`` by a
 ``MultiNode``. But the right thing to do is to insert the ``MultiNode`` before
-and then use the ``return_ref`` in the assignment. In order know that the call
-is being within an assignment node, we created a new transformer:
+and then use the ``return_ref`` in the assignment. In order to know that the
+call is within an assignment node, we created a new transformer:
 
 .. code:: python
 
