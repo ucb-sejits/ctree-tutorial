@@ -110,10 +110,11 @@ class BasicFunction(ConcreteSpecializedFunction):
         return self._c_function(*args, **kwargs)
 
 
-c_square = BasicTranslator.from_function(square_array)
+if __name__ == '__main__':
+    c_square = BasicTranslator.from_function(square_array)
 
-test_array = np.array([range(10), range(10, 20)])
-square_array(test_array)
-print test_array
-c_square(test_array)
-print test_array
+    test_array = np.array([range(10), range(10, 20)])
+    square_array(test_array)
+    print test_array
+    c_square(test_array)
+    print test_array

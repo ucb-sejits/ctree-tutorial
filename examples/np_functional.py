@@ -185,9 +185,10 @@ class NpFunctionalTransformer(object):
         return BaseNpFunctionalTransformer.lifted_functions
 
 
-def sum_array(array):
-    sum_term = 3
-    return np_map(lambda x: x+sum_term, array)
+def sum_array(a):
+    np_map(lambda x: x*2, a)
+    np_elementwise(lambda x, y: x+y, a, a)
+    return np_reduce(lambda x, y: x+y, np_map(lambda x: x/4, a))
 
 
 class BasicTranslator(LazySpecializedFunction):
@@ -202,9 +203,9 @@ class BasicTranslator(LazySpecializedFunction):
         tree = NpFunctionalTransformer(arg_type).visit(tree)
         tree = PyBasicConversions().visit(tree)
 
-        fib_fn = tree.find(FunctionDecl, name="apply")
-        fib_fn.params[0].type = arg_type()
-        fib_fn.return_type = arg_type._dtype_.type()
+        fn = tree.find(FunctionDecl, name="apply")
+        fn.params[0].type = arg_type()
+        fn.return_type = arg_type._dtype_.type()
 
         lifted_functions = NpFunctionalTransformer.lifted_functions()
         c_translator = CFile("generated", [lifted_functions, tree])
@@ -223,7 +224,6 @@ class BasicTranslator(LazySpecializedFunction):
 
 class BasicFunction(ConcreteSpecializedFunction):
     def __init__(self, entry_name, project_node, entry_typesig):
-        ctree.CONFIG.set('c', 'CFLAGS', ctree.CONFIG.get('c', 'CFLAGS') + ' -g')
         self._c_function = self._compile(entry_name, project_node, entry_typesig)
 
     def __call__(self, *args, **kwargs):

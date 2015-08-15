@@ -134,8 +134,7 @@ class NpReduceTransformer(BaseNpFunctionalTransformer):
                     FunctionCall(inner_function, [SymbolRef(accumulator_ref),
                                                   ArrayRef(array_ref,
                                                            SymbolRef("i"))])
-                )]
-                )
+                )])
         ]
 
         return defn, SymbolRef(accumulator_ref)
@@ -217,9 +216,9 @@ class BasicTranslator(LazySpecializedFunction):
         tree = NpFunctionalTransformer(arg_type).visit(tree)
         tree = PyBasicConversions().visit(tree)
 
-        fib_fn = tree.find(FunctionDecl, name="apply")
-        fib_fn.params[0].type = arg_type()
-        fib_fn.return_type = arg_type._dtype_.type()
+        fn = tree.find(FunctionDecl, name="apply")
+        fn.params[0].type = arg_type()
+        fn.return_type = arg_type._dtype_.type()
 
         c_translator = CFile("generated", [tree])
 
@@ -237,7 +236,6 @@ class BasicTranslator(LazySpecializedFunction):
 
 class BasicFunction(ConcreteSpecializedFunction):
     def __init__(self, entry_name, project_node, entry_typesig):
-        ctree.CONFIG.set('c', 'CFLAGS', ctree.CONFIG.get('c', 'CFLAGS') + ' -g')
         self._c_function = self._compile(entry_name, project_node, entry_typesig)
 
     def __call__(self, *args, **kwargs):
@@ -256,6 +254,3 @@ if __name__ == '__main__':
     test_array = np.array([range(10), range(10, 20)])
     b = c_sum_array(test_array)
     print b
-
-
-

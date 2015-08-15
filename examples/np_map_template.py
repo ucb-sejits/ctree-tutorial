@@ -119,8 +119,8 @@ class BasicTranslator(LazySpecializedFunction):
         tree = NpMapTransformer(arg_type).visit(tree)
         tree = PyBasicConversions().visit(tree)
 
-        fib_fn = tree.find(FunctionDecl, name="apply")
-        fib_fn.params[0].type = arg_type()
+        fn = tree.find(FunctionDecl, name="apply")
+        fn.params[0].type = arg_type()
 
         lifted_functions = NpMapTransformer.lifted_functions
         c_translator = CFile("generated", [lifted_functions, tree])
@@ -139,20 +139,17 @@ class BasicTranslator(LazySpecializedFunction):
 
 class BasicFunction(ConcreteSpecializedFunction):
     def __init__(self, entry_name, project_node, entry_typesig):
-        ctree.CONFIG.set('c', 'CFLAGS', ctree.CONFIG.get('c', 'CFLAGS') + ' -g')
         self._c_function = self._compile(entry_name, project_node, entry_typesig)
 
     def __call__(self, *args, **kwargs):
         return self._c_function(*args, **kwargs)
 
 
-c_square_array = BasicTranslator.from_function(square_array)
+if __name__ == '__main__':
+    c_square_array = BasicTranslator.from_function(square_array)
 
-test_array = np.array([range(10), range(10, 20)])
-square_array(test_array)
-print test_array
-c_square_array(test_array)
-print test_array
-
-
-
+    test_array = np.array([range(10), range(10, 20)])
+    square_array(test_array)
+    print test_array
+    c_square_array(test_array)
+    print test_array
